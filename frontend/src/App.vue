@@ -37,8 +37,11 @@
         :routes="routes"
         :bookings="bookings"
         :notices="notices"
+        :action-error="actionError"
         @booking-created="handleBookingCreated"
         @booking-restored="handleBookingRestored"
+        @booking-cancelled="handleBookingCancelled"
+        @clear-action-error="actionError = ''"
       />
     </main>
   </div>
@@ -69,6 +72,7 @@ const pageMap = {
 const activePage = ref("routes");
 const loading = ref(true);
 const error = ref("");
+const actionError = ref("");
 const attractions = ref([]);
 const routes = ref([]);
 const bookings = ref([]);
@@ -76,6 +80,48 @@ const notices = ref([]);
 
 const activeComponent = computed(() => pageMap[activePage.value]);
 const pageTitle = computed(() => navItems.find((item) => item.key === activePage.value)?.label);
+
+function parseErrorMessage(err) {
+  try {
+    const data = JSON.parse(err.message);
+    if (data.detail) return data.detail;
+    if (data.non_field_errors) return data.non_field_errors.join("；");
+    if (typeof data === "string") return data;
+    return err.message;
+  } catch {
+    return err.message || "操作失败，请稍后重试";
+  }
+}
+
+function findBookingIndex(id) {
+  return bookings.value.findIndex((b) => b.id === id);
+}
+
+function findRouteIndex(id) {
+  return routes.value.findIndex((r) => r.id === id);
+}
+
+function recalcRouteEnrolled(routeId) {
+  const routeIdx = findRouteIndex(routeId);
+  if (routeIdx === -1) return;
+  const route = routes.value[routeIdx];
+  const routeBookings = bookings.value.filter(
+    (b) => b.route === routeId && b.status !== "cancelled"
+  );
+  const enrolled = routeBookings.reduce((sum, b) => sum + b.party_size, 0);
+  const progress = route.min_group_size === 0
+    ? 100
+    : Math.min(Math.round((enrolled / route.min_group_size) * 100), 100);
+  route.enrolled_count = enrolled;
+  route.group_progress = progress;
+
+  bookings.value.forEach((b) => {
+    if (b.route === routeId) {
+      b.group_enrolled = enrolled;
+      b.group_progress = progress;
+    }
+  });
+}
 
 async function loadData() {
   loading.value = true;
@@ -99,13 +145,61 @@ async function loadData() {
 }
 
 async function handleBookingCreated(payload) {
-  await travelApi.createBooking(payload);
-  await loadData();
+  actionError.value = "";
+  try {
+    await travelApi.createBooking(payload);
+    await loadData();
+  } catch (err) {
+    actionError.value = `提交报名失败：${parseErrorMessage(err)}`;
+  }
+}
+
+async function handleBookingCancelled(bookingId) {
+  actionError.value = "";
+  const idx = findBookingIndex(bookingId);
+  if (idx === -1) return;
+
+  const booking = bookings.value[idx];
+  const originalStatus = booking.status;
+  const routeId = booking.route;
+
+  booking.status = "cancelled";
+  booking.status_label = "已取消";
+  recalcRouteEnrolled(routeId);
+
+  try {
+    await travelApi.patchBooking(bookingId, { status: "cancelled" });
+    await loadData();
+  } catch (err) {
+    booking.status = originalStatus;
+    booking.status_label = originalStatus === "confirmed" ? "已确认" : "待确认";
+    recalcRouteEnrolled(routeId);
+    actionError.value = `取消报名失败：${parseErrorMessage(err)}`;
+  }
 }
 
 async function handleBookingRestored(bookingId) {
-  await travelApi.patchBooking(bookingId, { status: "confirmed" });
-  await loadData();
+  actionError.value = "";
+  const idx = findBookingIndex(bookingId);
+  if (idx === -1) return;
+
+  const booking = bookings.value[idx];
+  const originalStatus = booking.status;
+  const routeId = booking.route;
+
+  booking.status = "confirmed";
+  booking.status_label = "已确认";
+  recalcRouteEnrolled(routeId);
+
+  try {
+    await travelApi.patchBooking(bookingId, { status: "confirmed" });
+    await loadData();
+  } catch (err) {
+    booking.status = originalStatus;
+    booking.status_label = "已取消";
+    recalcRouteEnrolled(routeId);
+    actionError.value = `恢复报名失败：${parseErrorMessage(err)}`;
+  }
 }
 
 onMounted(loadData);

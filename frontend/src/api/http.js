@@ -10,7 +10,22 @@ async function request(path, options = {}) {
   });
 
   if (!response.ok) {
-    const message = await response.text();
+    let message = "";
+    const text = await response.text();
+    try {
+      const data = JSON.parse(text);
+      if (data.detail) {
+        message = data.detail;
+      } else if (typeof data === "object") {
+        const firstKey = Object.keys(data)[0];
+        if (firstKey) {
+          const val = data[firstKey];
+          message = Array.isArray(val) ? val.join("；") : String(val);
+        }
+      }
+    } catch {
+      message = text;
+    }
     throw new Error(message || `HTTP ${response.status}`);
   }
 

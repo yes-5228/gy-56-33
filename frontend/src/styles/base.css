@@ -396,6 +396,63 @@ textarea {
   color: white;
 }
 
+.cancel-btn {
+  border: 1px solid #b42318;
+  border-radius: 6px;
+  background: white;
+  color: #b42318;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cancel-btn:hover {
+  background: #b42318;
+  color: white;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tag.confirmed {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.tag.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.action-error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #b42318;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.close-error {
+  border: 0;
+  background: transparent;
+  color: #b42318;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+}
+
+.close-error:hover {
+  color: #7f1d1d;
+}
+
 @media (max-width: 900px) {
   .app-shell,
   .booking-layout {

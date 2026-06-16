@@ -38,7 +38,9 @@
         <textarea v-model="form.remark" rows="3"></textarea>
       </label>
       <p v-if="submitError" class="error-msg">{{ submitError }}</p>
-      <button class="primary-action" type="submit">提交报名</button>
+      <button class="primary-action" type="submit" :disabled="submitting">
+        {{ submitting ? "提交中..." : "提交报名" }}
+      </button>
     </form>
 
     <section class="table-panel">
@@ -49,6 +51,10 @@
         </div>
         <span>{{ bookings.length }} 条报名</span>
       </div>
+      <div v-if="actionError" class="action-error-banner">
+        <span>{{ actionError }}</span>
+        <button type="button" class="close-error" @click="$emit('clear-action-error')">×</button>
+      </div>
       <div class="booking-list">
         <article v-for="booking in bookings" :key="booking.id">
           <div>
@@ -58,10 +64,18 @@
           <div class="booking-actions">
             <span class="tag" :class="booking.status">{{ booking.status_label }}</span>
             <button
-              v-if="booking.status === 'cancelled'"
+              v-if="booking.status !== 'cancelled'"
+              class="cancel-btn"
+              type="button"
+              :disabled="booking._loading"
+              @click="cancelBooking(booking)"
+            >取消报名</button>
+            <button
+              v-else
               class="restore-btn"
               type="button"
-              @click="$emit('booking-restored', booking.id)"
+              :disabled="booking._loading"
+              @click="restoreBooking(booking)"
             >恢复报名</button>
           </div>
           <strong>{{ booking.group_enrolled }}/{{ booking.min_group_size }}人 · 进度{{ booking.group_progress }}%</strong>
@@ -77,9 +91,15 @@ import { computed, reactive, ref } from "vue";
 const props = defineProps({
   routes: { type: Array, required: true },
   bookings: { type: Array, required: true },
+  actionError: { type: String, default: "" },
 });
 
-const emit = defineEmits(["booking-created", "booking-restored"]);
+const emit = defineEmits([
+  "booking-created",
+  "booking-restored",
+  "booking-cancelled",
+  "clear-action-error",
+]);
 
 const form = reactive({
   route: "",
@@ -92,6 +112,7 @@ const form = reactive({
 });
 
 const submitError = ref("");
+const submitting = ref(false);
 
 const selectedRoute = computed(() =>
   props.routes.find((r) => r.id === form.route)
@@ -106,11 +127,23 @@ function submit() {
       return;
     }
   }
+  submitting.value = true;
   emit("booking-created", { ...form });
   form.contact_name = "";
   form.phone = "";
   form.party_size = 1;
   form.travel_date = "";
   form.remark = "";
+  submitting.value = false;
+}
+
+function cancelBooking(booking) {
+  booking._loading = true;
+  emit("booking-cancelled", booking.id);
+}
+
+function restoreBooking(booking) {
+  booking._loading = true;
+  emit("booking-restored", booking.id);
 }
 </script>
