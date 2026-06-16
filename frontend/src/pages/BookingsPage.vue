@@ -12,6 +12,9 @@
           <option v-for="route in routes" :key="route.id" :value="route.id">{{ route.title }}</option>
         </select>
       </label>
+      <div v-if="selectedRoute" class="capacity-hint">
+        已报 {{ selectedRoute.enrolled_count }} / 最多 {{ selectedRoute.max_group_size }} 人
+      </div>
       <label>
         联系人
         <input v-model="form.contact_name" required />
@@ -34,6 +37,7 @@
         备注
         <textarea v-model="form.remark" rows="3"></textarea>
       </label>
+      <p v-if="submitError" class="error-msg">{{ submitError }}</p>
       <button class="primary-action" type="submit">提交报名</button>
     </form>
 
@@ -51,8 +55,16 @@
             <h4>{{ booking.contact_name }} · {{ booking.party_size }} 人</h4>
             <p>{{ booking.route_title }} / {{ booking.travel_date }}</p>
           </div>
-          <span class="tag">{{ booking.status_label }}</span>
-          <strong>{{ booking.group_enrolled }}/{{ booking.min_group_size }}</strong>
+          <div class="booking-actions">
+            <span class="tag" :class="booking.status">{{ booking.status_label }}</span>
+            <button
+              v-if="booking.status === 'cancelled'"
+              class="restore-btn"
+              type="button"
+              @click="$emit('booking-restored', booking.id)"
+            >恢复报名</button>
+          </div>
+          <strong>{{ booking.group_enrolled }}/{{ booking.min_group_size }}人 · 进度{{ booking.group_progress }}%</strong>
         </article>
       </div>
     </section>
@@ -60,14 +72,14 @@
 </template>
 
 <script setup>
-import { reactive } from "vue";
+import { computed, reactive, ref } from "vue";
 
-defineProps({
+const props = defineProps({
   routes: { type: Array, required: true },
   bookings: { type: Array, required: true },
 });
 
-const emit = defineEmits(["booking-created"]);
+const emit = defineEmits(["booking-created", "booking-restored"]);
 
 const form = reactive({
   route: "",
@@ -79,7 +91,21 @@ const form = reactive({
   remark: "",
 });
 
+const submitError = ref("");
+
+const selectedRoute = computed(() =>
+  props.routes.find((r) => r.id === form.route)
+);
+
 function submit() {
+  submitError.value = "";
+  if (selectedRoute.value) {
+    const remaining = selectedRoute.value.max_group_size - selectedRoute.value.enrolled_count;
+    if (form.party_size > remaining) {
+      submitError.value = `名额不足：剩余 ${remaining} 人，本单报 ${form.party_size} 人`;
+      return;
+    }
+  }
   emit("booking-created", { ...form });
   form.contact_name = "";
   form.phone = "";

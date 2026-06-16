@@ -1,5 +1,7 @@
 from rest_framework import viewsets
 
+from apps.routes.models import TravelRoute
+
 from .models import Booking
 from .serializers import BookingSerializer
 
@@ -16,3 +18,11 @@ class BookingViewSet(viewsets.ModelViewSet):
         if status:
             queryset = queryset.filter(status=status)
         return queryset
+
+    def perform_create(self, serializer):
+        booking = serializer.save()
+        booking.route = TravelRoute.objects.get(pk=booking.route_id)
+
+    def perform_update(self, serializer):
+        booking = serializer.save()
+        booking.route = TravelRoute.objects.get(pk=booking.route_id)

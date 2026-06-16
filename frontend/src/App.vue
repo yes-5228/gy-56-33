@@ -38,6 +38,7 @@
         :bookings="bookings"
         :notices="notices"
         @booking-created="handleBookingCreated"
+        @booking-restored="handleBookingRestored"
       />
     </main>
   </div>
@@ -99,6 +100,11 @@ async function loadData() {
 
 async function handleBookingCreated(payload) {
   await travelApi.createBooking(payload);
+  await loadData();
+}
+
+async function handleBookingRestored(bookingId) {
+  await travelApi.patchBooking(bookingId, { status: "confirmed" });
   await loadData();
 }
 

@@ -1,4 +1,4 @@
-import { get, post } from "./http";
+import { get, patch, post } from "./http";
 
 export const travelApi = {
   getAttractions: () => get("/attractions/"),
@@ -6,4 +6,5 @@ export const travelApi = {
   getBookings: () => get("/bookings/"),
   getNotices: () => get("/notifications/"),
   createBooking: (payload) => post("/bookings/", payload),
+  patchBooking: (id, payload) => patch(`/bookings/${id}/`, payload),
 };

@@ -31,3 +31,10 @@ export function post(path, body) {
     body: JSON.stringify(body),
   });
 }
+
+export function patch(path, body) {
+  return request(path, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}

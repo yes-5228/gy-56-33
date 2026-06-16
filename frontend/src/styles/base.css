@@ -356,6 +356,46 @@ textarea {
   color: #0f766e;
 }
 
+.tag.cancelled {
+  background: #fef2f2;
+  color: #b42318;
+}
+
+.capacity-hint {
+  border-radius: 6px;
+  background: #f5f7fa;
+  padding: 8px 12px;
+  color: #415063;
+  font-size: 13px;
+}
+
+.error-msg {
+  margin: 0;
+  color: #b42318;
+  font-size: 13px;
+}
+
+.booking-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.restore-btn {
+  border: 1px solid #0f766e;
+  border-radius: 6px;
+  background: white;
+  color: #0f766e;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.restore-btn:hover {
+  background: #0f766e;
+  color: white;
+}
+
 @media (max-width: 900px) {
   .app-shell,
   .booking-layout {
